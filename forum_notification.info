@@ -1,0 +1,14 @@
+name = Forum Notification
+description = Show Forum Notifications
+package = Veinet
+core = 7.x
+
+dependencies[] = forum
+dependencies[] = forum_access
+dependencies[]  = xautoload
+
+
+files[] = src/Tests/ForumCounterTest.php
+
+
+configure = admin/config/content/forum_notification

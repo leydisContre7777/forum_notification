@@ -1,0 +1,164 @@
+<?php
+
+use Drupal\forum_notification\Forum\ForumCounter;
+
+/**
+ * @file
+ * Hook implementations for the Forum notification module.
+ */
+
+
+/**
+ * Implements hook_menu().
+ */
+function forum_notification_menu() {
+	$items = array();
+
+	$items['admin/config/content/forum_notification'] = array(
+		'title' => 'Forum Notification',
+		'description' => 'Configuration for Forum Notification module',
+		'page callback' => 'drupal_get_form',
+		'page arguments' => array('forum_notification_form'),
+		'access arguments' => array('access administration pages'),
+		'type' => MENU_NORMAL_ITEM,
+	);
+
+
+	$items['forum/autocomplete'] = array(
+		'title' => 'Custom Autocomplete',
+		'page callback' => 'forum_autocomplete',
+		'access arguments' => array('access taxonomy forum autocomplete'),
+		'type' => MENU_CALLBACK,
+	);
+
+	return $items;
+
+}
+
+
+/**
+ * Implements hook_form().
+ */
+function forum_notification_form($node, &$form_state) {
+
+	$form['forum_notification_vocabulary'] = array(
+		'#type' => 'textfield',
+		'#title' => t('Autocomplete the name of the forum'),
+		'#autocomplete_path' => 'forum/autocomplete',
+		'#maxlength' => 60,
+		'#size' => 15,
+		'#required' => 0,
+	);
+
+
+	return system_settings_form($form);
+
+}
+
+/**
+ *Page callback for menu 'forum/autocomplete'
+ */
+function forum_autocomplete($string) {
+	$matches = array();
+	$result = db_select('taxonomy_term_data', 'ttd');
+	$result->fields('ttd', array('tid', 'name'));
+	$result->condition(db_or()->condition('ttd.name', '%' . db_like($string) . '%', 'LIKE'));
+	$query = $result->execute();
+
+	foreach ($query as $row) {
+		$matches[$row->name] = $row->name;
+	}
+
+	// Return the result to the form in json
+	drupal_json_output($matches);
+}
+
+
+/**
+ * Implements hook_permission().
+ */
+function forum_notification_permission() {
+	return array(
+		'access taxonomy forum autocomplete' => array(
+			'title' => t('Access Forum notification Autocomplete'),
+			'description' => t('Access permission of Forum Taxonomy Autocomplete.'),
+		),
+	);
+}
+
+/**
+ * Implements hook_node_insert().
+ */
+function forum_notification_node_insert($node) {
+	if ($node->type == 'forum') {
+		$forum_notification = new ForumCounter();
+
+		$forum_notification->forumNotification($node->nid, $node->forum_tid, $node->uid);
+	}
+}
+
+
+/**
+ * Implements hook_comment_insert().
+ */
+function forum_notification_comment_insert($comment) {
+	if ($comment->node_type == 'comment_node_forum') {
+
+		$tid = db_query('SELECT  f.tid FROM {forum}  
+											as f 
+											WHERE f.nid = :nid',
+			array(
+				':nid' => $comment->nid,
+			)
+		)->fetchField();
+
+		$forum_notification = new ForumCounter();
+
+		$forum_notification->forumNotification($comment->nid, $tid, $comment->uid);
+	}
+
+}
+
+
+/**
+ * Implements hook_preprocess_HOOK().
+ */
+function forum_notification_preprocess_page(&$variables) {
+	global $user;
+
+
+	$forum = variable_get('forum_notification_vocabulary');
+
+	$taxonomy = taxonomy_get_term_by_name($forum);
+
+
+	$term = reset($taxonomy);
+
+	$notifications = 0;
+
+	$path = current_path();
+
+	if ($path == 'forum' && $_GET['show']) {
+
+		$variables['hide_forums'] = $term->tid; #you can show this variable on your page theme.
+
+	}
+
+	$forum = new ForumCounter();
+
+
+	if (isset($term->tid) && $path == 'forum/' . $term->tid . '') {
+
+		$forum->setForumCounter($term->tid, $user->uid);
+
+	}
+	elseif (isset($term->tid)) {
+		$notifications = $forum->getForumNotification($term->tid, $user->uid);
+
+	}
+
+
+	$variables['notifications'] = $notifications; #you can show this variable on your page theme.
+
+
+}

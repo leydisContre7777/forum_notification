@@ -1,0 +1,53 @@
+<?php
+
+
+/**
+* Implements hook_schema().
+*/
+
+function forum_innovation_schema() {
+	$schema['forum_counter_states'] = array(
+		'description' => 'Count number of forum notifications.',
+		'fields' => array(
+			'fid' => array(
+				'type' => 'serial',
+				'unsigned' => TRUE,
+				'not null' => TRUE,
+				'description' => 'The forum ID.',
+			),
+			'tid' => array(
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => TRUE,
+				'default'  => 0,
+				'description' => 'The forum taxonomy term ID.',
+			),
+
+			'nid' => array(
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => TRUE,
+				'default' => 0,
+				'description' => 'The node ID.',
+			),
+			'state' => array(
+				'type' => 'varchar',
+				'length' => '32',
+				'not null' => TRUE,
+				'description' => 'The state of the forum notification.',
+			),
+			'uid' => array(
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => TRUE,
+				'default' => 0,
+				'description' => 'The user ID.',
+			),
+		),
+		'primary key' => array('fid'),
+	);
+
+
+	return $schema;
+
+}
