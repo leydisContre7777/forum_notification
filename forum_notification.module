@@ -124,10 +124,10 @@ function forum_notification_comment_insert($comment) {
  * Implements hook_preprocess_HOOK().
  */
 function forum_notification_preprocess_page(&$variables) {
-	global $user;
 
 
 	$forum = variable_get('forum_notification_vocabulary');
+
 
 	$taxonomy = taxonomy_get_term_by_name($forum);
 
@@ -136,29 +136,25 @@ function forum_notification_preprocess_page(&$variables) {
 
 	$notifications = 0;
 
-	$path = current_path();
 
-	if ($path == 'forum' && $_GET['show']) {
-
-		$variables['hide_forums'] = $term->tid; #you can show this variable on your page theme.
-
-	}
-
-	$forum = new ForumCounter();
+	if (user_is_logged_in() && isset($term->tid)) {
+		global $user;
+		$forum = new ForumCounter();
 
 
-	if (isset($term->tid) && $path == 'forum/' . $term->tid . '') {
-
-		$forum->setForumCounter($term->tid, $user->uid);
-
-	}
-	elseif (isset($term->tid)) {
 		$notifications = $forum->getForumNotification($term->tid, $user->uid);
 
+		//TODO: Create a block with the notification information
+
+
+		//TODO: Mark notification as viewed when user access to the forum
+		/*$forum->setForumCounter($term->tid, $user->uid);*/ #This will be for mark notification as viewed
+
+
+		$variables['notifications'] = $notifications; #you can show this variable on your page theme.
+
+
 	}
-
-
-	$variables['notifications'] = $notifications; #you can show this variable on your page theme.
 
 
 }
